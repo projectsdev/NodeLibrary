@@ -1,0 +1,25 @@
+{
+  "name": "Library",
+  "version": "0.0.1",
+  "private": true,
+  "description": "New Swagger API Project",
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "main": "app.js",
+  "dependencies": {
+    "firebase-admin": "^6.0.0",
+    "mysql": "^2.16.0",
+    "restify": "^4.0.2",
+    "swagger-restify-mw": "^0.1.0",
+    "xlsjs": "^1.0.1"
+  },
+  "devDependencies": {
+    "should": "^7.1.0",
+    "supertest": "^1.0.0"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "test": "swagger project test"
+  }
+}

@@ -1,0 +1,48 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: Hello World App
+# during dev, should point to your local machine
+host: localhost:8081
+     
+# basePath prefixes all resource paths
+basePath: /
+#
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+  
+paths:
+  /login:
+      x-swagger-router-controller: main_func
+      post:
+       summary: Login Student
+       operationId: login
+       parameters:
+             - in: body
+               name: attributes
+               description: attributes of student
+               required: true
+               schema:
+                 $ref: "#/definitions/login"
+       responses:
+         200:
+           description: login
+  
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+definitions:
+  login:
+      type: object
+      properties:
+            attributes:
+              type: object
+  
