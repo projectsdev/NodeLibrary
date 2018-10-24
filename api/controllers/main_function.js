@@ -35,18 +35,11 @@ module.exports = {
   getBooks: getBooks,
   getRecent: getRecent,
 };
+//curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
 
-var workbook = excel.readFile( __dirname+'/sample.xlsx');
-var sheet_name_list = workbook.SheetNames;
-var xlData = excel.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
- var keys = Object.keys(xlData);
-   for(var m in keys){
-    console.log(xlData[keys[m]].C);
-   }
-
-
+ 
 function login(req, res) {
-  // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name}
+
   	var getOb = req.swagger.params.attributes.value;
     var admission_number = getOb.admission_number;
     var password = getOb.password;
@@ -79,8 +72,8 @@ function login(req, res) {
     })
 }
 
-function getBooks(req, res){
 
+function getBooks(req, res){
 
 
 }
@@ -88,6 +81,5 @@ function getBooks(req, res){
 function getRecent(req, res){
 
 
-
-
 }
+

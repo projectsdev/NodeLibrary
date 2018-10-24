@@ -21,7 +21,7 @@ produces:
   
 paths:
   /login:
-      x-swagger-router-controller: main_func
+      x-swagger-router-controller: main_function
       post:
        summary: Login Student
        operationId: login
