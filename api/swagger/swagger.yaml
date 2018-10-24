@@ -35,6 +35,21 @@ paths:
        responses:
          200:
            description: login
+  /getHomeContents:
+      x-swagger-router-controller: main_function
+      post:
+       summary: getHomeContents
+       operationId: getHomeContents
+       parameters:
+             - in: body
+               name: attributes
+               description: getHomeContents
+               required: true
+               schema:
+                 $ref: "#/definitions/getHomeContents"
+       responses:
+         200:
+           description: getHomeContents         
   
   /swagger:
     x-swagger-pipe: swagger_raw
@@ -45,4 +60,9 @@ definitions:
       properties:
             attributes:
               type: object
+  getHomeContents:
+      type: object
+      properties:
+            attributes:
+              type: object            
   
