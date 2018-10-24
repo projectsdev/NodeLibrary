@@ -33,7 +33,7 @@ var database = admin.database();
 module.exports = {
   login: login,
   getHomeContents: getHomeContents,
-  getRecent: getRecent,
+  getCourses: getCourses,
 };
 //curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
 
@@ -93,10 +93,23 @@ function getHomeContents(req, res){
     })
 
 }
+// getCourses(0,0)
+function getCourses(req, res){
 
-function getRecent(req, res){
-
-
+  database.ref('Courses').once('value').then(function(snap){
+    var snapshot = snap.val();
+    res.send({
+      fetch: 1,
+      snapshot: snapshot
+    })
+    console.log(snapshot)
+   
+  }).catch(function(error){
+    res.send({
+      fetch: 0,
+      err: err
+    })
+  })
 }
 
 

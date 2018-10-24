@@ -50,6 +50,21 @@ paths:
        responses:
          200:
            description: getHomeContents         
+  /getCourses:
+      x-swagger-router-controller: main_function
+      get:
+       summary: getCourses
+       operationId: getCourses
+       parameters:
+             - in: body
+               name: getCourses
+               description: getCourses
+               required: true
+               schema:
+                 $ref: "#/definitions/getCourses"
+       responses:
+         200:
+           description: getCourses         
   
   /swagger:
     x-swagger-pipe: swagger_raw
@@ -65,4 +80,8 @@ definitions:
       properties:
             attributes:
               type: object            
-  
+  getCourses:
+      type: object
+      properties:
+            attributes:
+              type: object
