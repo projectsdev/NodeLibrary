@@ -64,7 +64,37 @@ paths:
                  $ref: "#/definitions/getCourses"
        responses:
          200:
-           description: getCourses         
+           description: getCourses
+  /bookMyBooks:
+      x-swagger-router-controller: main_function
+      post:
+       summary: bookMyBooks
+       operationId: bookMyBooks
+       parameters:
+             - in: body
+               name: attributes
+               description: getCourses
+               required: true
+               schema:
+                 $ref: "#/definitions/bookingParameters"
+       responses:
+         200:
+           description: getCourses 
+  /MyTransactionCount:
+      x-swagger-router-controller: main_function
+      post:
+       summary: MyTransactionCount
+       operationId: MyTransactionCount
+       parameters:
+             - in: body
+               name: attributes
+               description: MyTransactionCount
+               required: true
+               schema:
+                 $ref: "#/definitions/MyTransactionCount"
+       responses:
+         200:
+           description: MyTransactionCount         
   
   /swagger:
     x-swagger-pipe: swagger_raw
@@ -85,3 +115,14 @@ definitions:
       properties:
             attributes:
               type: object
+  bookingParameters:
+      type: object
+      properties:
+            attributes:
+              type: object
+  MyTransactionCount:
+      type: object
+      properties:
+            attributes:
+              type: object            
+              

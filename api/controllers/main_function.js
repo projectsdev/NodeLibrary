@@ -32,8 +32,10 @@ var database = admin.database();
 
 module.exports = {
   login: login,
-  getHomeContents: getHomeContents,
+  getHomeContents: getContents,
   getCourses: getCourses,
+  bookMyBooks: bookMyBooks,
+  MyTransactionCount: MyTransactionCount,
 };
 //curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
 
@@ -73,7 +75,7 @@ function login(req, res) {
 }
 
 
-function getHomeContents(req, res){
+function getContents(req, res){
     
     var getOb = req.swagger.params.attributes.value;
     var course = getOb.course;
@@ -90,6 +92,13 @@ function getHomeContents(req, res){
     }
     database.ref(path).once('value').then(function(snap){
         data = snap.val();
+        if(data == null)
+          res.send({
+          fetch: 0,
+          err: 'No Data'
+        });
+        
+        else
         res.send({
           fetch: 1,
           data: data
@@ -111,7 +120,6 @@ function getCourses(req, res){
       fetch: 1,
       snapshot: snapshot
     })
-    console.log(snapshot)
    
   }).catch(function(error){
     res.send({
@@ -121,6 +129,165 @@ function getCourses(req, res){
   })
 }
 
+function MyTransactionCount(req, res){
+
+     var getOb = req.swagger.params.attributes.value;
+     var admission_number = getOb.admission_no;
+     database.ref('MyTransactionCount/'+admission_number).once('value').then(function(snap){
+      var snapshot = snap.val()
+     
+      if(snapshot == null){
+              console.log('-----------------1')
+
+          res.send({
+            proceed: true,
+            remaining: 0
+          })
+      }//
+
+      else{
+        var remaining = snapshot['book'];
+        if(remaining == 0){//
+                console.log('-----------------2')
+
+          res.send({
+            proceed: false,
+            remaining: 0
+          })
+        }//
+
+        else{////
+          console.log('-----------3')
+        res.send({
+            proceed: true,
+            remaining: remaining
+          })
+      }/////
+      }///
+
+
+     })
+
+}
+
+function bookMyBooks(req, res){
+    var getOb = req.swagger.params.attributes.value;
+    console.log(getOb)
+    var admission_number = getOb.admission_no;
+    var txn_id = 'TXN' + Date.now();
+    var json = {}
+    var date = new Date();
+    var startDate = parseMyDate(date);
+    
+    date.setDate(date.getDate()+7)
+    var finalDate = parseMyDate(date)
+    
+    var processObj = getOb.my_books
+   
+    var concatDateandReturn = {}
+    concatDateandReturn = getOb.my_books
+    var keys = Object.keys(concatDateandReturn)
+    for(var m in keys){
+      concatDateandReturn[keys[m]]['pick_date'] = startDate;
+      concatDateandReturn[keys[m]]['last_date'] = startDate;
+      concatDateandReturn[keys[m]]['return_status'] = false;
+
+    }
+    json['MyTransactions/'+admission_number+'/'+txn_id ] = {
+      /*pick_date: startDate,
+      last_date: finalDate,
+      return: false,*/
+      MyBooks: concatDateandReturn
+    }
+    
+
+    database.ref().update(json).then(function(snap){
+        res.send({
+          update: 1
+        })
+        decrementBooks(getOb);
+        updateMyCount(getOb);
+    }).catch(function(err){
+      res.send({
+        update: 0,
+        err: err
+      })
+    })
+
+}
+function updateMyCount(getOb){
+  var admission_number = getOb.admission_no
+  var json = {}
+  database.ref('MyTransactionCount/'+admission_number).once('value').then(function(snap){
+     var booked = 0;
+     var count = 0;
+     var iterateJson = getOb.my_books
+     var keys = Object.keys(iterateJson);
+      for(var m in keys){
+        count+= iterateJson[keys[m]].booked_no;
+      }
+    var snapshot = snap.val()
+    if(snapshot == null){
+        booked = count;
+    }
+    else{
+         booked = snapshot['book'] + count 
+    }
+
+     json['MyTransactionCount/'+admission_number] = {
+        book: booked
+       } 
+
+       database.ref().update(json).then(function(gotData){
+
+       })
+
+  })
+}
+
+function decrementBooks(getOb){
+  
+  var course = getOb.course
+  var dept = getOb.dept
+  var semester = getOb.semester
+  var getMyBooks = getOb.my_books
+  var keys = Object.keys(getMyBooks);
+  var decrementJson = {}
+  var path = 'SemBooks/'+ course + '/' + dept + '/' + semester
+  database.ref(path).once('value').then(function(snap){
+    var snapshot = snap.val();
+    var secondKey = Object.keys(snapshot);
+    for(var m in keys){
+        for(var n in secondKey){
+          if(keys[m] == secondKey[n]){
+              console.log('Found '+ keys[m])
+              var bal = snapshot[keys[m]].available;
+              bal = bal - getMyBooks[keys[m]].booked_no
+              decrementJson[path+'/'+keys[m]+'/available'] = bal;  
+          }
+        }
+    }
+    database.ref().update(decrementJson).then(function(status){
+      console.log('Finished')
+    })
+  })
+
+}
+
+function parseMyDate(today){
+
+    var dd = today.getDate();
+    var mm = today.getMonth()+1; //January is 0!
+    var yyyy = today.getFullYear();
+    if(dd<10){
+        dd='0'+dd;
+    } 
+    if(mm<10){
+        mm='0'+mm;
+    } 
+    var parsedDate = dd+'/'+mm+'/'+yyyy;
+    return parsedDate
+}
 
 var workbook = excel.readFile( __dirname+'/sample_book.xls');
  var sheet_name_list = workbook.SheetNames;
@@ -247,4 +414,6 @@ function updateFirebase(){
   database.ref('/LibraryBooks/').update(json).then(function(snap){
 
 });
+
+
 }
