@@ -78,8 +78,17 @@ function getHomeContents(req, res){
     var getOb = req.swagger.params.attributes.value;
     var course = getOb.course;
     var dept = getOb.dept;
+    var flag = getOb.flag;
     var data = {};
-    database.ref('LibraryBooks/'+course+'/'+dept+'/').once('value').then(function(snap){
+    var path;
+    if(flag == 0 ){
+      path = 'SemBooks/'+course+'/'+dept+'/'
+    }
+    else{
+      var sem = getOb.semester;
+      path = 'SemBooks/'+course+'/'+dept+'/'+sem
+    }
+    database.ref(path).once('value').then(function(snap){
         data = snap.val();
         res.send({
           fetch: 1,
