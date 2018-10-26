@@ -94,7 +94,37 @@ paths:
                  $ref: "#/definitions/MyTransactionCount"
        responses:
          200:
-           description: MyTransactionCount         
+           description: MyTransactionCount       
+  /getMyBookings:
+      x-swagger-router-controller: main_function
+      post:
+       summary: getMyBookings
+       operationId: getMyBookings
+       parameters:
+             - in: body
+               name: attributes
+               description: getMyBookings
+               required: true
+               schema:
+                 $ref: "#/definitions/getMyBookings"
+       responses:
+         200:
+           description: MyTransactionCount    
+  /renewOrreturn:
+      x-swagger-router-controller: main_function
+      post:
+       summary: renewOrreturn
+       operationId: renewOrreturn
+       parameters:
+             - in: body
+               name: attributes
+               description: renewOrreturn
+               required: true
+               schema:
+                 $ref: "#/definitions/renewOrreturn"
+       responses:
+         200:
+           description: renewOrreturn         
   
   /swagger:
     x-swagger-pipe: swagger_raw
@@ -121,6 +151,16 @@ definitions:
             attributes:
               type: object
   MyTransactionCount:
+      type: object
+      properties:
+            attributes:
+              type: object        
+  getMyBookings:
+      type: object
+      properties:
+            attributes:
+              type: object   
+  renewOrreturn:
       type: object
       properties:
             attributes:

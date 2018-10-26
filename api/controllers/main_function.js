@@ -36,9 +36,115 @@ module.exports = {
   getCourses: getCourses,
   bookMyBooks: bookMyBooks,
   MyTransactionCount: MyTransactionCount,
+  getMyBookings: getMyBookings,
+  renewOrreturn: renewOrreturn
 };
 //curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
 
+function renewOrreturn(req, res){
+    var getOb = req.swagger.params.attributes.value;
+    var renew_return = getOb.renew_return;
+    var admission_no = getOb.admission_number
+    var txn_id = getOb.txn_id
+    var serial_no = getOb.serial_no
+    var dept = getOb.dept
+    var course = getOb.course
+    var semester = getOb.semester
+    var book_id = getOb.book_id
+    var updateJson = {}
+
+    if(renew_return == 1){ // for renewal
+      var date = new Date();
+      var startDate = parseMyDate(date);
+      date.setDate(date.getDate()+1)
+      var finalDate = parseMyDate(date)
+      updateJson = {
+        pick_date: startDate,
+        last_date: finalDate,
+      }
+      database.ref('MyTransactions/'+admission_no+'/'+txn_id+'/MyBooks/'+serial_no).update(updateJson).then(function(snap){
+        res.send({
+          update: 1,
+          startDate: startDate,
+          finalDate: finalDate
+        })
+      }).catch(function(err){
+        res.send({
+          update: 0,
+          err: err,
+        })
+      })
+    }
+    else{
+        database.ref('MyTransactions/'+admission_no+'/'+txn_id+'/MyBooks/'+serial_no).update({return_status: true}).then(function(snap){
+          database.ref('SemBooks/'+course+'/'+dept+'/'+semester+'/'+book_id).once('value').then(function(snap){
+            var snapshot = snap.val()
+            updateJson = {
+              available: snapshot['available'] + 1
+            }
+            database.ref('SemBooks/'+course+'/'+dept+'/'+semester+'/'+book_id).update(updateJson).then(function(snap){
+              res.send({
+                update: 2
+              })
+              updateMyTrasactionCount(admission_no);
+            }).catch(function(err){
+        res.send({
+          update: 0,
+          err: err,
+        })
+      })
+          }).catch(function(err){
+        res.send({
+          update: 0,
+          err: err,
+        })
+      })
+       }).catch(function(err){
+        res.send({
+          update: 0,
+          err: err,
+        })
+      })
+    }
+}
+
+function updateMyTrasactionCount(admission_no){
+
+  database.ref('MyTransactionCount/'+admission_no).once('value').then(function(snap){
+    var snapshot = snap.val();
+    var count = snapshot['book'];
+    count--;
+    snapshot['book'] = count;
+    database.ref('MyTransactionCount/'+admission_no).update(snapshot).then(function(snap){
+      
+    })
+  })
+}
+
+function getMyBookings(req, res){
+    var getOb = req.swagger.params.attributes.value;
+    var admission_number = getOb.admission_no;
+    database.ref('MyTransactions/'+admission_number).once('value').then(function(snap){
+      var snapshot = snap.val()
+      if(snapshot == null){
+        res.send({
+          fetch: 0,
+          err: 'No data'
+        })
+      }
+      else
+        res.send({
+          fetch: 1,
+          data: snapshot
+        })
+    }).catch(function(err){
+      res.send({
+          fetch: 0,
+          err: err
+        })
+    })
+
+}
  
 function login(req, res) {
 
@@ -113,7 +219,7 @@ function getContents(req, res){
 }
 // getCourses(0,0)
 function getCourses(req, res){
-
+console.log('this----->')
   database.ref('Courses').once('value').then(function(snap){
     var snapshot = snap.val();
     res.send({
@@ -137,8 +243,6 @@ function MyTransactionCount(req, res){
       var snapshot = snap.val()
      
       if(snapshot == null){
-              console.log('-----------------1')
-
           res.send({
             proceed: true,
             remaining: 0
@@ -148,8 +252,6 @@ function MyTransactionCount(req, res){
       else{
         var remaining = snapshot['book'];
         if(remaining == 0){//
-                console.log('-----------------2')
-
           res.send({
             proceed: false,
             remaining: 0
@@ -157,7 +259,6 @@ function MyTransactionCount(req, res){
         }//
 
         else{////
-          console.log('-----------3')
         res.send({
             proceed: true,
             remaining: remaining
@@ -178,27 +279,34 @@ function bookMyBooks(req, res){
     var json = {}
     var date = new Date();
     var startDate = parseMyDate(date);
-    
     date.setDate(date.getDate()+7)
     var finalDate = parseMyDate(date)
     
     var processObj = getOb.my_books
    
     var concatDateandReturn = {}
+    var finalCount = 0;
     concatDateandReturn = getOb.my_books
     var keys = Object.keys(concatDateandReturn)
+    var serial = 150;
+    var proJson = {}
     for(var m in keys){
       concatDateandReturn[keys[m]]['pick_date'] = startDate;
-      concatDateandReturn[keys[m]]['last_date'] = startDate;
+      concatDateandReturn[keys[m]]['last_date'] = finalDate;
       concatDateandReturn[keys[m]]['return_status'] = false;
+      var cc = concatDateandReturn[keys[m]]['booked_no'];
+      var start = 0;
+      while(start<cc){
+        concatDateandReturn[keys[m]]['booked_no'] = 1;
+        concatDateandReturn[keys[m]]['book_id'] = keys[m];
+        proJson['SL-' + serial++] = concatDateandReturn[keys[m]];
+        start++
+        finalCount++;
+      } 
+     
 
     }
-    json['MyTransactions/'+admission_number+'/'+txn_id ] = {
-      /*pick_date: startDate,
-      last_date: finalDate,
-      return: false,*/
-      MyBooks: concatDateandReturn
-    }
+    json['MyTransactions/'+admission_number+'/'+txn_id+'/MyBooks/' ] = proJson
     
 
     database.ref().update(json).then(function(snap){
@@ -206,7 +314,7 @@ function bookMyBooks(req, res){
           update: 1
         })
         decrementBooks(getOb);
-        updateMyCount(getOb);
+        updateMyCount(admission_number,finalCount);
     }).catch(function(err){
       res.send({
         update: 0,
@@ -215,23 +323,18 @@ function bookMyBooks(req, res){
     })
 
 }
-function updateMyCount(getOb){
-  var admission_number = getOb.admission_no
+function updateMyCount(admission_number,finalCount){
+  
   var json = {}
   database.ref('MyTransactionCount/'+admission_number).once('value').then(function(snap){
      var booked = 0;
-     var count = 0;
-     var iterateJson = getOb.my_books
-     var keys = Object.keys(iterateJson);
-      for(var m in keys){
-        count+= iterateJson[keys[m]].booked_no;
-      }
+     
     var snapshot = snap.val()
     if(snapshot == null){
-        booked = count;
+        booked = finalCount;
     }
     else{
-         booked = snapshot['book'] + count 
+         booked = snapshot['book'] + finalCount 
     }
 
      json['MyTransactionCount/'+admission_number] = {
@@ -289,12 +392,13 @@ function parseMyDate(today){
     return parsedDate
 }
 
-var workbook = excel.readFile( __dirname+'/sample_book.xls');
+var workbook = excel.readFile( __dirname+'/Books.ods');
  var sheet_name_list = workbook.SheetNames;
  var xlData = excel.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
  var keys = Object.keys(xlData);
  var json = {}
-   for(var m = 0; m<1000; m++)
+ // console.log(xlData)
+   for(var m in keys)
    // for(var m in keys)
    {
     // console.log(xlData[keys[m]]["Admission_Number"])
@@ -398,22 +502,52 @@ var workbook = excel.readFile( __dirname+'/sample_book.xls');
         }
       
       }
-        json[branch+'/'+course+'/'+'BK-'+xlData[keys[m]]['book_no']] = {
-          book_name: xlData[keys[m]].book_name,
-          author:xlData[keys[m]].author,
-          semester: 'S'+xlData[keys[m]].semester,
-          published: xlData[keys[m]].published,
-          volume: xlData[keys[m]].volume,
-          available: xlData[keys[m]].available,
-          renewable: renewable,
-        }
+        // json['B-TECH/ME/'+ xlData[keys[m]].semester + '/BK-'+xlData[keys[m]]['book_no']] = {
+        //   book_name: xlData[keys[m]].book_name,
+        //   author:xlData[keys[m]].author,
+        //   semester: xlData[keys[m]].semester,
+        //   published: xlData[keys[m]].published,
+        //   volume: xlData[keys[m]].volume,
+        //   available: xlData[keys[m]].available,
+        //   subject: xlData[keys[m]].subject,
+        //   renewable: true,
+        // }
         
    }
+
 // updateFirebase()
+var snapshot = {};
 function updateFirebase(){
-  database.ref('/LibraryBooks/').update(json).then(function(snap){
+ 
+ database.ref('SemBooks').update(json).then(function(snap){
 
-});
+  });
 
+  
+}
+// database.ref('SemBooks').once('value').then(function(snap){
+//     snapshot = snap.val();
+//     doIterations();
+//   })
+
+
+
+
+// if any changes to all books 
+function doIterations(){
+  var keys = Object.keys(snapshot); // btech
+  for(var m in keys){
+    var keys2 = Object.keys(snapshot[keys[m]]);  // cs
+    for(var n in keys2){
+      var keys3 = Object.keys(snapshot[keys[m]][keys2[n]]); //s1
+      for(var o in keys3){
+        var keys4 = Object.keys(snapshot[keys[m]][keys2[n]][keys3[o]]);
+        for(var p in keys4){
+          snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['subject'] = 'not defined';
+        }
+        
+      }
+    }
+  }
 
 }
