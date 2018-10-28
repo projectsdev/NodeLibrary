@@ -56,7 +56,7 @@ function renewOrreturn(req, res){
     if(renew_return == 1){ // for renewal
       var date = new Date();
       var startDate = parseMyDate(date);
-      date.setDate(date.getDate()+1)
+      date.setDate(date.getDate()+7)
       var finalDate = parseMyDate(date)
       updateJson = {
         pick_date: startDate,
@@ -115,6 +115,9 @@ function updateMyTrasactionCount(admission_no){
     var count = snapshot['book'];
     count--;
     snapshot['book'] = count;
+    if(count == 0){
+      snapshot['book'] = null
+    }
     database.ref('MyTransactionCount/'+admission_no).update(snapshot).then(function(snap){
       
     })
