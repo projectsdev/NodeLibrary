@@ -124,12 +124,31 @@ paths:
                  $ref: "#/definitions/renewOrreturn"
        responses:
          200:
+           description: renewOrreturn    
+  
+  /getNonRenewables:
+      x-swagger-router-controller: main_function
+      get:
+       summary: getNonRenewables
+       operationId: getNonRenewables
+       parameters:
+             - in: body
+               name: attributes
+               description: getNonRenewables
+               required: true
+               schema:
+                 $ref: "#/definitions/getNonRenewables"
+       responses:
+         200:
            description: renewOrreturn         
   
   /swagger:
     x-swagger-pipe: swagger_raw
 # complex objects have schema definitions
 definitions:
+  getNonRenewables:
+      type: object
+      
   login:
       type: object
       properties:

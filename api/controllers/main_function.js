@@ -27,10 +27,26 @@ module.exports = {
   bookMyBooks: bookMyBooks,
   MyTransactionCount: MyTransactionCount,
   getMyBookings: getMyBookings,
-  renewOrreturn: renewOrreturn
+  renewOrreturn: renewOrreturn,
+  getNonRenewables: getNonRenewables
 };
 //curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
 
+function getNonRenewables(req, res){
+	console.log('this')
+	database.ref('NR-Books').once('value').then(function(snap){
+		
+		res.send({
+			fetch: 1,
+			data: snap.val()
+		})
+	}).catch(function(err){
+		res.send({
+			fetch: 0,
+			message: err
+		})
+	})
+}
 function renewOrreturn(req, res){
     var getOb = req.swagger.params.attributes.value;
     var renew_return = getOb.renew_return;
@@ -41,8 +57,9 @@ function renewOrreturn(req, res){
     var course = getOb.course
     var semester = getOb.semester
     var book_id = getOb.book_id
+    var RN_NRN = getOb.RN_NRN
     var updateJson = {}
-
+    var path
     if(renew_return == 1){ // for renewal
       var date = new Date();
       var startDate = parseMyDate(date);
@@ -67,12 +84,17 @@ function renewOrreturn(req, res){
     }
     else{
         database.ref('MyTransactions/'+admission_no+'/'+txn_id+'/MyBooks/'+serial_no).update({return_status: true}).then(function(snap){
-          database.ref('SemBooks/'+course+'/'+dept+'/'+semester+'/'+book_id).once('value').then(function(snap){
+        	if(RN_NRN == 1)
+        		path = 'SemBooks/'+course+'/'+dept+'/'+semester+'/'+book_id
+        	else
+        		path = 'NR-Books/' + book_id
+        	console.log(path)
+          database.ref(path).once('value').then(function(snap){
             var snapshot = snap.val()
             updateJson = {
               available: snapshot['available'] + 1
             }
-            database.ref('SemBooks/'+course+'/'+dept+'/'+semester+'/'+book_id).update(updateJson).then(function(snap){
+            database.ref(path).update(updateJson).then(function(snap){
               res.send({
                 update: 2
               })
@@ -212,7 +234,6 @@ function getContents(req, res){
 }
 // getCourses(0,0)
 function getCourses(req, res){
-console.log('this----->')
   database.ref('Courses').once('value').then(function(snap){
     var snapshot = snap.val();
     res.send({
@@ -263,10 +284,11 @@ function MyTransactionCount(req, res){
      })
 
 }
-
+var response_to;
 function bookMyBooks(req, res){
     var getOb = req.swagger.params.attributes.value;
     console.log(getOb)
+    response_to = res;
     var admission_number = getOb.admission_no;
     var txn_id = 'TXN' + Date.now();
     var json = {}
@@ -283,6 +305,8 @@ function bookMyBooks(req, res){
     var keys = Object.keys(concatDateandReturn)
     var serial = 150;
     var proJson = {}
+    var changeCount = {}
+    console.log(concatDateandReturn)
     for(var m in keys){
       concatDateandReturn[keys[m]]['pick_date'] = startDate;
       concatDateandReturn[keys[m]]['last_date'] = finalDate;
@@ -295,18 +319,21 @@ function bookMyBooks(req, res){
         proJson['SL-' + serial++] = concatDateandReturn[keys[m]];
         start++
         finalCount++;
+        changeCount[keys[m]] = start
+        // decrementBooks(getOb,keys[m]);
+
       } 
-     
+      if(m==keys.length-1){
+      	console.log(changeCount)
+      	decrementBooks(getOb,changeCount)
+      }
 
     }
     json['MyTransactions/'+admission_number+'/'+txn_id+'/MyBooks/' ] = proJson
     
 
     database.ref().update(json).then(function(snap){
-        res.send({
-          update: 1
-        })
-        decrementBooks(getOb);
+        // decrementBooks(getOb);
         updateMyCount(admission_number,finalCount);
     }).catch(function(err){
       res.send({
@@ -335,37 +362,59 @@ function updateMyCount(admission_number,finalCount){
        } 
 
        database.ref().update(json).then(function(gotData){
-
+       		 response_to.send({
+        	  update: 1
+      			  })
        })
 
   })
 }
 
-function decrementBooks(getOb){
+function decrementBooks(getOb,keyValue){
   
   var course = getOb.course
   var dept = getOb.dept
   var semester = getOb.semester
   var getMyBooks = getOb.my_books
-  var keys = Object.keys(getMyBooks);
+  var RN_NRN = getOb.RN_NRN
+  // var keys = Object.keys(getMyBooks);
   var decrementJson = {}
-  var path = 'SemBooks/'+ course + '/' + dept + '/' + semester
+  var path;
+  if(RN_NRN == 1)
+   path = 'SemBooks/'+ course + '/' + dept + '/' + semester
+  else
+  	path = 'NR-Books'
+
   database.ref(path).once('value').then(function(snap){
-    var snapshot = snap.val();
-    var secondKey = Object.keys(snapshot);
+  var snapshot = snap.val();
+  var secondKey = Object.keys(snapshot);
+  var keys = Object.keys(keyValue)
+
     for(var m in keys){
+    	var bal = keyValue[keys[m]];
         for(var n in secondKey){
           if(keys[m] == secondKey[n]){
-              console.log('Found '+ keys[m])
-              var bal = snapshot[keys[m]].available;
-              bal = bal - getMyBooks[keys[m]].booked_no
-              decrementJson[path+'/'+keys[m]+'/available'] = bal;  
+              console.log('Found '+bal)
+              bal = snapshot[secondKey[n]].available - bal
+              // bal = bal - increment
+              console.log('Found-2 '+bal)
+              decrementJson[keys[m]+'/available'] = bal;  
           }
+	          if(m==keys.length-1){
+
+	        	database.ref(path).update(decrementJson).then(function(status){
+
+	       		 })
+	        }
         }
+            
     }
-    database.ref().update(decrementJson).then(function(status){
-      console.log('Finished')
-    })
+   		/*for(var m in keys){
+   			decrementJson[path+'/'+keys[m]+'/available'] = 
+   		}*/
+
+        
+    
   })
 
 }
@@ -385,13 +434,15 @@ function parseMyDate(today){
     return parsedDate
 }
 
-var workbook = excel.readFile( __dirname+'/Books.ods');
+
+ var workbook = excel.readFile( __dirname+'/sample_book.xls');
  var sheet_name_list = workbook.SheetNames;
  var xlData = excel.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
  var keys = Object.keys(xlData);
  var json = {}
  // console.log(xlData)
-   for(var m in keys)
+   // for(var m in keys)
+    for(var m = 0;m < 20; m++)
    // for(var m in keys)
    {
     // console.log(xlData[keys[m]]["Admission_Number"])
@@ -428,9 +479,7 @@ var workbook = excel.readFile( __dirname+'/Books.ods');
         }
         if(random2 == 4){
           course = 'ME'
-         
-
-        }
+            }
       }
       else if(random==2){
         renewable = !renewable
@@ -495,16 +544,29 @@ var workbook = excel.readFile( __dirname+'/Books.ods');
         }
       
       }
-        // json['B-TECH/ME/'+ xlData[keys[m]].semester + '/BK-'+xlData[keys[m]]['book_no']] = {
-        //   book_name: xlData[keys[m]].book_name,
-        //   author:xlData[keys[m]].author,
-        //   semester: xlData[keys[m]].semester,
-        //   published: xlData[keys[m]].published,
-        //   volume: xlData[keys[m]].volume,
-        //   available: xlData[keys[m]].available,
-        //   subject: xlData[keys[m]].subject,
-        //   renewable: true,
-        // }
+      var date = new Date();
+    
+      if(random2 == 1)
+    	date.setDate(date.getDate()-0)
+      else if(random2 == 2)
+      	    	date.setDate(date.getDate()-1)
+      else if(random2 == 3)
+      	    	date.setDate(date.getDate()-2)
+      else if(random2 == 4)	
+      	    	date.setDate(date.getDate()-3)
+
+        json['BK-NR'+xlData[keys[m]]['book_no']] = {
+          book_name: xlData[keys[m]].book_name,
+          author:xlData[keys[m]].author,
+          // semester: xlData[keys[m]].semester,
+          published: xlData[keys[m]].published,
+          volume: xlData[keys[m]].volume,
+          available: xlData[keys[m]].available,
+          upload_date: parseMyDate(date),
+          faculty: 'nil',
+          // subject: xlData[keys[m]].subject,
+          renewable: false,
+        }
         
    }
 
@@ -512,8 +574,10 @@ var workbook = excel.readFile( __dirname+'/Books.ods');
 var snapshot = {};
 function updateFirebase(){
  
- database.ref('SemBooks').update(json).then(function(snap){
+ database.ref('NR-Books').update(json).then(function(snap){
 
+  }).catch(function(err){
+  	console.log(err)
   });
 
   
@@ -528,6 +592,30 @@ function updateFirebase(){
 
 // if any changes to all books 
 function doIterations(){
+  var teachers = [];
+  teachers.push('DR.SUKUMARAN NAIR C G')	
+  teachers.push('BESHIBA WILSON')
+  teachers.push('PRIYA SEKHAR S')
+  teachers.push('RENETHA J B')
+  teachers.push('CHITHRA A.S')
+  teachers.push('ASHA A S')
+  teachers.push('SONIA GEORGE')
+  teachers.push('LEKSHMI CHANDRAN')
+  teachers.push('ASHITHA.S.S')
+  teachers.push('CHRISTY JOJY')
+  teachers.push('AMBILY JANE')
+  teachers.push('DIVYA CHRISTOPHER')
+  teachers.push('ANJANA THAMPY S')
+  teachers.push('SHEEJA BEEVI S')
+  teachers.push('CHITHIRA RAKSHMI G')
+  teachers.push('SARANYA B S')
+  teachers.push('NISHA O.S')
+  teachers.push('SMITHA J C')
+  teachers.push('SUMI MARIA ABRAHAM')
+  teachers.push('PREETHI W')
+  teachers.push('GREESHMA R G')
+  teachers.push('ASHA S')
+  var count = 0;
   var keys = Object.keys(snapshot); // btech
   for(var m in keys){
     var keys2 = Object.keys(snapshot[keys[m]]);  // cs
@@ -536,11 +624,24 @@ function doIterations(){
       for(var o in keys3){
         var keys4 = Object.keys(snapshot[keys[m]][keys2[n]][keys3[o]]);
         for(var p in keys4){
-          snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['subject'] = 'not defined';
+          // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['renewable'] = true;
+          var date = new Date();
+          console.log(keys[m]+'/'+keys2[n]+'/'+keys3[o]+'/'+keys4[p])
+          if(count<22){
+          	date.setDate(date.getDate()-count)
+            // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
+             snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
+            count++;
+		  }
+		  else{
+		  	count = 0;
+		  	date.setDate(date.getDate()-count)
+			// snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
+			snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
+		  }
         }
-        
       }
     }
   }
-
+  // updateFirebase()
 }
