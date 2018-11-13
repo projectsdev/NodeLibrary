@@ -28,9 +28,64 @@ module.exports = {
   MyTransactionCount: MyTransactionCount,
   getMyBookings: getMyBookings,
   renewOrreturn: renewOrreturn,
-  getNonRenewables: getNonRenewables
+  getNonRenewables: getNonRenewables,
+  getRecents: getRecents,
 };
 //curl -d '{"admission_number":"cs-2015-25","password":"190595"}}' -H "Content-Type: application/json" -X GET http://192.168.0.19:10010/login
+
+/*var date1 = new Date("12/12/2010");
+var date2 = new Date("12/07/2010");
+var timeDiff = Math.abs(date2.getTime() - date1.getTime());
+var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+console.log(diffDays)*/
+function getRecents(req, res){
+	var getOb = req.swagger.params.attributes.value;
+    var course = getOb.course; 
+    var dept = getOb.dept;
+    var flag = getOb.flag;
+    var data1 = {};
+    var data2 = {};
+    var data3 = {};
+    var path = 'SemBooks/'+course+'/'+dept+'/S1'
+    var json = {};
+  	database.ref(path).once('value').then(function(snap){
+  		var snapshot = snap.val()
+  	 	var keys = Object.keys(snapshot)
+
+  	 	for(var m in keys){
+  	 		var upload = snapshot[keys[m]]['upload_date']
+  	 		var d1 = new Date(upload)
+  	 		var d2 = new Date();
+  	 		var timeDiff = Math.abs(d1.getTime() - d2.getTime());
+			var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+		
+			if(diffDays == 1 ){
+				data1[keys[m]] = snapshot[keys[m]]
+				json[upload] = data1;
+			}
+			else if(diffDays == 2 ){
+				data2[keys[m]] = snapshot[keys[m]]
+				json[upload] = data2;
+			}
+			else if(diffDays == 3 ){
+				data3[keys[m]] = snapshot[keys[m]]
+				json[upload] = data3;
+			}
+
+  	 	// console.log(data);
+  	 }
+  	 res.send({
+  	 	fetch: 1,
+  	 	data: json
+  	 });
+   	}).catch(function(error){
+   		res.send({
+   			fetch: 0,
+   			message: 'Data fetch error'
+   		})
+   	})
+
+}
 
 function getNonRenewables(req, res){
 	console.log('this')
@@ -430,7 +485,7 @@ function parseMyDate(today){
     if(mm<10){
         mm='0'+mm;
     } 
-    var parsedDate = dd+'/'+mm+'/'+yyyy;
+    var parsedDate = mm+'/'+dd+'/'+yyyy;
     return parsedDate
 }
 
@@ -574,14 +629,19 @@ function parseMyDate(today){
 var snapshot = {};
 function updateFirebase(){
  
- database.ref('NR-Books').update(json).then(function(snap){
+ // database.ref('NR-Books').update(json).then(function(snap){
 
-  }).catch(function(err){
-  	console.log(err)
-  });
+ //  }).catch(function(err){
+ //  	console.log(err)
+ //  });
 
+// database.ref('SemBooks').update(snapshot).then(function(snap){
+//   }).catch(function(err){
+//   	console.log(err)
+//   });
   
 }
+
 // database.ref('SemBooks').once('value').then(function(snap){
 //     snapshot = snap.val();
 //     doIterations();
@@ -627,17 +687,17 @@ function doIterations(){
           // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['renewable'] = true;
           var date = new Date();
           console.log(keys[m]+'/'+keys2[n]+'/'+keys3[o]+'/'+keys4[p])
-          if(count<22){
+          if(count<10){
           	date.setDate(date.getDate()-count)
-            // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
-             snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
+            snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
+             // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
             count++;
 		  }
 		  else{
 		  	count = 0;
 		  	date.setDate(date.getDate()-count)
-			// snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
-			snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
+			snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
+			// snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
 		  }
         }
       }

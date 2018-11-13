@@ -20,6 +20,21 @@ produces:
   - application/json
   
 paths:
+  /getRecents:
+      x-swagger-router-controller: main_function
+      post:
+       summary: getRecents
+       operationId: getRecents
+       parameters:
+             - in: body
+               name: attributes
+               description: getRecents
+               required: true
+               schema:
+                 $ref: "#/definitions/getRecents"
+       responses:
+         200:
+           description: login
   /login:
       x-swagger-router-controller: main_function
       post:
@@ -146,6 +161,9 @@ paths:
     x-swagger-pipe: swagger_raw
 # complex objects have schema definitions
 definitions:
+  getRecents:
+      type: object
+      
   getNonRenewables:
       type: object
       
