@@ -2,7 +2,6 @@
 
 var util = require('util');
 var admin = require("firebase-admin");
-var mysql = require('mysql');
 var excel = require('xlsjs');
 
 var serviceAccount = require("../keys/serviceKey.json");
@@ -10,14 +9,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://library-007.firebaseio.com"
 });
-var connection = mysql.createConnection({
-  
-  host: 'localhost',
-  user: 'projectsdev',
-  password:'projectsdev',
-  database: 'Library',
-  
-});
+
 var database = admin.database();
 
 module.exports = {
@@ -490,7 +482,33 @@ function parseMyDate(today){
 }
 
 
- var workbook = excel.readFile( __dirname+'/sample_book.xls');
+
+// updateFirebase()
+var snapshot = {};
+function updateFirebase(){
+ 
+ // database.ref('NR-Books').update(json).then(function(snap){
+
+ //  }).catch(function(err){
+ //  	console.log(err)
+ //  });
+
+// database.ref('SemBooks').update(snapshot).then(function(snap){
+//   }).catch(function(err){
+//   	console.log(err)
+//   });
+  
+}
+
+// database.ref('SemBooks').once('value').then(function(snap){
+//     snapshot = snap.val();
+//     doIterations();
+//   })
+
+
+// adminFunctions()
+function adminFunctions(){
+	var workbook = excel.readFile( __dirname+'/sample_book.xls');
  var sheet_name_list = workbook.SheetNames;
  var xlData = excel.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
  var keys = Object.keys(xlData);
@@ -624,30 +642,7 @@ function parseMyDate(today){
         }
         
    }
-
-// updateFirebase()
-var snapshot = {};
-function updateFirebase(){
- 
- // database.ref('NR-Books').update(json).then(function(snap){
-
- //  }).catch(function(err){
- //  	console.log(err)
- //  });
-
-// database.ref('SemBooks').update(snapshot).then(function(snap){
-//   }).catch(function(err){
-//   	console.log(err)
-//   });
-  
 }
-
-// database.ref('SemBooks').once('value').then(function(snap){
-//     snapshot = snap.val();
-//     doIterations();
-//   })
-
-
 
 
 // if any changes to all books 
