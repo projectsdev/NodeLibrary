@@ -30,6 +30,7 @@ var date2 = new Date("12/07/2010");
 var timeDiff = Math.abs(date2.getTime() - date1.getTime());
 var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 console.log(diffDays)*/
+
 function getRecents(req, res){
 	var getOb = req.swagger.params.attributes.value;
     var course = getOb.course; 
