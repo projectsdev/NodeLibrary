@@ -412,7 +412,7 @@ function updateMyCount(admission_number,finalCount){
        database.ref().update(json).then(function(gotData){
        		 response_to.send({
         	  update: 1
-      			  })
+      		  })
        })
 
   })
@@ -482,10 +482,9 @@ function parseMyDate(today){
     return parsedDate
 }
 
-
-
+// ----------------------------------------------neglect the code below(from line 486 to 704)-------------------------------------------------------------
 // updateFirebase()
-var snapshot = {};
+/*var snapshot = {};
 function updateFirebase(){
  
  // database.ref('NR-Books').update(json).then(function(snap){
@@ -530,7 +529,7 @@ function adminFunctions(){
       "year-of-joining": xlData[keys[m]].join_year,
        course: xlData[keys[m]].course,
 
-    }*/
+    // }
    var branch;
     var course;
     var random = Math.floor((Math.random() * 4) + 1); //random number between 1 and 4
@@ -655,7 +654,7 @@ function doIterations(){
   teachers.push('RENETHA J B')
   teachers.push('CHITHRA A.S')
   teachers.push('ASHA A S')
-  teachers.push('SONIA GEORGE')
+  // teachers.push('SONIA GEORGE')
   teachers.push('LEKSHMI CHANDRAN')
   teachers.push('ASHITHA.S.S')
   teachers.push('CHRISTY JOJY')
@@ -683,7 +682,7 @@ function doIterations(){
           // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['renewable'] = true;
           var date = new Date();
           console.log(keys[m]+'/'+keys2[n]+'/'+keys3[o]+'/'+keys4[p])
-          if(count<10){
+          if(count<3){
           	date.setDate(date.getDate()-count)
             snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['upload_date'] =  parseMyDate(date)
              // snapshot[keys[m]][keys2[n]][keys3[o]][keys4[p]]['faculty'] = teachers[count]
@@ -699,5 +698,5 @@ function doIterations(){
       }
     }
   }
-  // updateFirebase()
-}
+  updateFirebase()
+}*/
